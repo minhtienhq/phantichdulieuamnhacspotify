@@ -1,0 +1,11 @@
+INSIGHT REPORT
+--------------
+
+Thập niên phổ biến nhất: 1990 (0.52)
+Thập niên thấp nhất: 1980 (0.51)
+Xu hướng: tăng
+
+Nhận xét:
+- Danceability cao có xu hướng dễ viral
+- Tempo khoảng 120 BPM phổ biến
+- Nhạc mới có lợi thế trên nền tảng streaming
