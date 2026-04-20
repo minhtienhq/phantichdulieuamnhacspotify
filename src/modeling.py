@@ -16,6 +16,23 @@ def train_model(df, features):
 
     print("\nHUẤN LUYỆN MÔ HÌNH")
 
+    # ======================
+    # FIX FEATURE (QUAN TRỌNG)
+    # ======================
+    # Loại bỏ target và cột không nên dùng
+    features = [
+        col for col in features
+        if col not in ['popularity', 'duration_ms']
+    ]
+
+    if 'popularity' in features:
+        raise ValueError("LỖI: 'popularity' không được nằm trong features!")
+
+    print("Features sử dụng:", features)
+
+    # ======================
+    # DATA
+    # ======================
     df_model = df.dropna(subset=features + ['popularity'])
 
     X = df_model[features]
@@ -25,8 +42,13 @@ def train_model(df, features):
         X, y, test_size=0.2, random_state=42
     )
 
+    # DEBUG (rất quan trọng)
+    print("Số lượng train:", len(X_train))
+    print("Số lượng test:", len(X_test))
+    print("Min/Max y:", y.min(), y.max())
+
     # ======================
-    # KHAI BÁO MODEL
+    # MODEL
     # ======================
     pipeline_lr = Pipeline([
         ('scaler', StandardScaler()),
@@ -34,7 +56,12 @@ def train_model(df, features):
     ])
 
     pipeline_rf = Pipeline([
-        ('model', RandomForestRegressor(random_state=42))
+        ('model', RandomForestRegressor(
+            n_estimators=200,
+            max_depth=10,
+            random_state=42,
+            n_jobs=-1
+        ))
     ])
 
     # ======================
@@ -48,6 +75,9 @@ def train_model(df, features):
     # ======================
     y_pred = pipeline_lr.predict(X_test)
     y_pred_rf = pipeline_rf.predict(X_test)
+
+    # DEBUG prediction
+    print("Sample RF prediction:", y_pred_rf[:10])
 
     # ======================
     # ĐÁNH GIÁ
@@ -68,7 +98,7 @@ def train_model(df, features):
     r2_rf, mse_rf, mae_rf = evaluate(y_test, y_pred_rf, "Random Forest")
 
     # ======================
-    # FEATURE IMPORTANCE (RF)
+    # FEATURE IMPORTANCE
     # ======================
     importance = pipeline_rf.named_steps['model'].feature_importances_
 
@@ -82,11 +112,8 @@ def train_model(df, features):
 
     print("Đã lưu file: feature_importance.csv")
 
-    # ⚠️ KHÔNG gán vào df (tránh lỗi pipeline side-effect)
-    # nếu muốn dùng thì return riêng
-
     # ======================
-    # SO SÁNH MODEL (BIỂU ĐỒ)
+    # SO SÁNH MODEL
     # ======================
     models = ['Linear Regression', 'Random Forest']
     r2_scores = [r2_lr, r2_rf]
@@ -96,9 +123,7 @@ def train_model(df, features):
     plt.title("So sánh R2 giữa các mô hình")
     plt.ylabel("R2 Score")
 
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
     plt.savefig(os.path.join(OUTPUT_DIR, "model_comparison.png"))
-    plt.show()
     plt.close()
 
     # ======================

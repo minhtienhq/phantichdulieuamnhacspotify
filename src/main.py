@@ -4,9 +4,6 @@ from visualization import plot_all
 from modeling import train_model
 from insight import show_insight
 
-import pandas as pd
-from sklearn.preprocessing import StandardScaler
-
 print("\nBẮT ĐẦU CHẠY PIPELINE")
 
 # ======================
@@ -17,22 +14,20 @@ df = load_and_clean_data()
 # ======================
 # 2. PHÂN TÍCH EDA
 # ======================
-features, top_artists, decade_popularity = run_eda(df)
+numeric_cols, corr, top_artists, decade_popularity = run_eda(df)
 
 # ======================
-# 3. TÍNH CORRELATION
+# 3. CHỌN FEATURE CHUẨN
 # ======================
-if features:
-    scaler = StandardScaler()
-    df_scaled = pd.DataFrame(
-        scaler.fit_transform(df[features]),
-        columns=features
-    )
-    corr = df_scaled.corr()
-    print("Đã tính ma trận tương quan")
-else:
-    corr = None
-    print("Không có feature để tính correlation")
+target = 'popularity'
+
+features = [
+    col for col in numeric_cols
+    if col not in ['popularity', 'duration_ms']
+]
+
+print("\nFEATURES DÙNG CHO MODEL:")
+print(features)
 
 # ======================
 # 4. HUẤN LUYỆN MODEL
@@ -47,8 +42,13 @@ else:
 # 5. VẼ BIỂU ĐỒ
 # ======================
 plot_all(
-    df, corr, top_artists, decade_popularity,
-    y_test, y_pred, y_pred_rf
+    df,
+    corr=corr,
+    top_artists=top_artists,
+    decade_popularity=decade_popularity,
+    y_test=y_test,
+    y_pred=y_pred,
+    y_pred_rf=y_pred_rf
 )
 
 # ======================
