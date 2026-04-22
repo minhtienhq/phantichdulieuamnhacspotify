@@ -23,16 +23,23 @@ def plot_all(df,
     numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns
 
     # ======================
-    # 1. Histogram
+    # 1. Histogram (2x2)
     # ======================
-    for col in numeric_cols:
-        plt.figure()
-        sns.histplot(df[col], bins=30, kde=True)
-        plt.title(f"Phân phối {col}")
+    important_cols = ['popularity', 'tempo', 'energy', 'danceability']
+    cols = [col for col in important_cols if col in df.columns]
 
-        path = os.path.join(OUTPUT_DIR, f"hist_{col}.png")
-        plt.savefig(path)
+    if cols:
+        plt.figure(figsize=(12, 8))
 
+        for i, col in enumerate(cols):
+            plt.subplot(2, 2, i + 1)
+            sns.histplot(df[col], bins=30, kde=True)
+            plt.title(col)
+
+        plt.suptitle("Phân phối các biến quan trọng", fontsize=16)
+        plt.tight_layout()
+
+        plt.savefig(os.path.join(OUTPUT_DIR, "hist_overview.png"))
         if show: plt.show()
         plt.close()
 
@@ -44,38 +51,42 @@ def plot_all(df,
         sns.heatmap(corr, annot=True, cmap='coolwarm', fmt=".2f")
         plt.title("Correlation Heatmap")
 
-        path = os.path.join(OUTPUT_DIR, "heatmap.png")
-        plt.savefig(path)
-
+        plt.savefig(os.path.join(OUTPUT_DIR, "heatmap.png"))
         if show: plt.show()
         plt.close()
 
     # ======================
-    # 3. Scatter vs Popularity
+    # 3. Scatter (2x2)
     # ======================
     if 'popularity' in df.columns:
-        for col in numeric_cols:
-            if col != 'popularity':
-                plt.figure()
+        cols = [col for col in numeric_cols if col != 'popularity'][:4]
+
+        if cols:
+            plt.figure(figsize=(12, 8))
+
+            for i, col in enumerate(cols):
+                plt.subplot(2, 2, i + 1)
                 sns.scatterplot(x=df[col], y=df['popularity'], alpha=0.5)
-                plt.title(f"{col} vs Popularity")
+                plt.title(col)
 
-                path = os.path.join(OUTPUT_DIR, f"{col}_vs_popularity.png")
-                plt.savefig(path)
+            plt.suptitle("Quan hệ với Popularity", fontsize=16)
+            plt.tight_layout()
 
-                if show: plt.show()
-                plt.close()
+            plt.savefig(os.path.join(OUTPUT_DIR, "scatter_overview.png"))
+            if show: plt.show()
+            plt.close()
 
     # ======================
     # 4. Top Artists
     # ======================
     if top_artists is not None:
-        plt.figure()
+        plt.figure(figsize=(10, 6))
         top_artists.sort_values(ascending=False).plot(kind='bar')
         plt.title("Top nghệ sĩ")
+        plt.xticks(rotation=45, ha='right')
 
-        path = os.path.join(OUTPUT_DIR, "top_artists.png")
-        plt.savefig(path)
+        plt.tight_layout()
+        plt.savefig(os.path.join(OUTPUT_DIR, "top_artists.png"))
 
         if show: plt.show()
         plt.close()
@@ -84,12 +95,12 @@ def plot_all(df,
     # 5. Decade Trend
     # ======================
     if decade_popularity is not None:
-        plt.figure()
+        plt.figure(figsize=(10, 6))
         decade_popularity.sort_index().plot(marker='o')
         plt.title("Popularity theo thập niên")
 
-        path = os.path.join(OUTPUT_DIR, "decade_popularity.png")
-        plt.savefig(path)
+        plt.tight_layout()
+        plt.savefig(os.path.join(OUTPUT_DIR, "decade_popularity.png"))
 
         if show: plt.show()
         plt.close()
@@ -100,51 +111,48 @@ def plot_all(df,
     if feature_importance is not None:
         plt.figure()
         feature_importance.sort_values().plot(kind='barh')
-        plt.title("Feature Importance (Random Forest)")
+        plt.title("Feature Importance")
 
-        path = os.path.join(OUTPUT_DIR, "feature_importance.png")
-        plt.savefig(path)
-
+        plt.savefig(os.path.join(OUTPUT_DIR, "feature_importance.png"))
         if show: plt.show()
         plt.close()
 
     # ======================
-    # 7. Residual Plot
+    # 7. Model Evaluation (ĐÃ FIX)
     # ======================
     if y_test is not None and y_pred_rf is not None:
-        residuals = y_test - y_pred_rf
+        print("DEBUG:", y_test is not None, y_pred is not None, y_pred_rf is not None)
 
-        plt.figure()
+        plt.figure(figsize=(12, 5))
+
+        # Residual Plot
+        plt.subplot(1, 2, 1)
+        residuals = y_test - y_pred_rf
         sns.scatterplot(x=y_pred_rf, y=residuals, alpha=0.5)
         plt.axhline(y=0, linestyle='--')
+        plt.title("Residual Plot")
 
-        plt.xlabel("Predicted")
-        plt.ylabel("Residuals")
-        plt.title("Residual Plot (Random Forest)")
+        # Model Comparison (LUÔN VẼ)
+        plt.subplot(1, 2, 2)
 
-        path = os.path.join(OUTPUT_DIR, "residual_plot.png")
-        plt.savefig(path)
+        # Linear Regression (nếu có)
+        if y_pred is not None:
+            sns.scatterplot(x=y_test, y=y_pred, label="LR", alpha=0.5)
 
-        if show: plt.show()
-        plt.close()
+        # Random Forest (luôn có)
+        sns.scatterplot(x=y_test, y=y_pred_rf, label="RF", alpha=0.5)
 
-    # ======================
-    # 8. So sánh model
-    # ======================
-    if y_test is not None and y_pred is not None and y_pred_rf is not None:
-        plt.figure()
+        # Đường chuẩn y = x (model lý tưởng)
+        min_val = min(y_test.min(), y_pred_rf.min())
+        max_val = max(y_test.max(), y_pred_rf.max())
+        plt.plot([min_val, max_val], [min_val, max_val], linestyle='--')
 
-        sns.scatterplot(x=y_test, y=y_pred, label="Linear Regression", alpha=0.5)
-        sns.scatterplot(x=y_test, y=y_pred_rf, label="Random Forest", alpha=0.5)
-
-        plt.xlabel("Actual")
-        plt.ylabel("Predicted")
         plt.legend()
-        plt.title("So sánh LR vs RF")
+        plt.title("Model Comparison")
 
-        path = os.path.join(OUTPUT_DIR, "lr_vs_rf.png")
-        plt.savefig(path)
+        plt.tight_layout()
 
+        plt.savefig(os.path.join(OUTPUT_DIR, "model_evaluation.png"))
         if show: plt.show()
         plt.close()
 
