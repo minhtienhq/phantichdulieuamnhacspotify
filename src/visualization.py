@@ -145,7 +145,7 @@ def plot_all(df,
         plt.close()
 
     # ======================
-    # 8. R2 COMPARISON (🔥 MỚI)
+    # 8. R2 COMPARISON
     # ======================
     if y_test is not None and y_pred_rf is not None:
         try:
